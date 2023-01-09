@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html xmlns:ng="http://angularjs.org" ng-app="F1Prediction">
+	<head>
+		<meta charset="UTF-8">
+		<title>F1 Prediction</title>
+        <link rel='stylesheet' type="text/css" href='theme.css' />
+
+		<!-- If i had time for a mobile interface, this is how it would have been setup, to find different screen sizes and thus use the correct css file
+        <link rel='stylesheet' type="text/css "media='screen and (min-width: 1px) and (max-width: 2000px)' href='theme.css' />
+        -->
+
+        <!--CDN link for google channel api-->
+        <script type="text/javascript" src="/_ah/channel/jsapi"></script>
+
+        <!--CDN link for angularjs 1.2.4 -->
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular.min.js"></script>
+        
+        <!--CDN link for the latest TweenMax-->
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+
+        <!--Load Google Charts API-->
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+        <!--This is generated code for google analytics-->
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-49116397-1', 'f1prediction.appspot.com');
+          ga('send', 'pageview');
+        </script>
+	</head>
+
+	<body ng-controller="appCtrl">
+
+		<div id="headerContainer">
+            <div id ="headerBar">
+    			<header id="header1" ng-class="headerBlk" ng-click="headerHomeClick()">
+    				<h3>HomePage</h3>
+    			</header>
+                <header id="header2" ng-class="headerBlk" ng-click="headerRaceClick()">
+                    <h3>Race Prediction Algorithm</h3>
+                </header>
+                <header id="heade3" ng-class="headerBlk" ng-click="headerDBClick()">
+                    <h3>Search Database</h3>
+                </header>
+                <header id="header4" ng-class="headerBlk" ng-click="headerLeagueClick()">
+                    <h3>Prediction League</h3>
+                </header>
+                <header id="header5" ng-class="headerBlk" ng-click="SignIn()" ng-hide ="SignedIn">
+                    <h3>Sign In</h3>
+                </header>
+            </div>
+		</div>
+        
+		<div id="homeContainer">
+            
+			<div id="homeBlock1" ng-class="homeBlk">
+                
+				<div id="mainBlock1" ng-class="mainBlk">
+					<h3>News Headlines</h3>
+                    <hr>
+                    <ul>
+                        <li class="driverNameClick" ng-click="changeNews('MemberLeague')">Petuki is leading the members league</li>
+                        <li class="driverNameClick" ng-click="changeNews('Malaysia')">Hamilton wins in Malaysia</li>
+                        <li class="driverNameClick" ng-click="changeNews('RedBullVideo')">Red Bull 2014 Rules Video</li>
+                        <li class="driverNameClick" ng-click="changeNews('TestersNote')">Note to testers</li>
+                    </ul>
+                    <hr>
+                    <h3>Upcoming Events</h3>
+                    <p><b>Next Race Weekend:</b> {{returnedNextRace[0].GPName}}
+                    <br/>
+                    <b>Date:</b> {{returnedNextRace[0].date}}</p>
+                    <img ng-src="images/Tracks/Bahrain.svg"/>
+
+				</div>
+				<div id="raceTutorialBlock1" ng-class="raceTutorialBlk">
+					<h3>Data Mining Overview</h3>
+                    <p>Data mining is the process of knowledge discovery from a database of information. Patterns and trends are analysed from the data using concepts taken from artificial intelligence, machine learning and statistics.</p>
+                    
+                    <p>For data mining to make predictions on a dataset, a statistical model is created that “reflects the important aspects of the object of study with some degree of realism”. The model therefore creates a prediction by exploring the relationship between the explanatory variables (input variables) and the relevant response variable (the predictor/outcome variable).</p>
+                    
+                    <p>This web application will utilise data minining techniques to predict the outcome of Formula 1 race results using data from race weekends covering the last four years. This dataset will be used to train the model, so that it can learn the trends over the last 4 years, and can then use these trends to attempt to predict a given race. A user can select to predict any race within the last four years.</p>
+				</div>
+                <div id="racePredictionBlock1" ng-class="racePredictionBlk">
+                    <h3>Prediction Controls</h3>
+                    <hr>
+                    <form ng-submit="processRacePrediction()">
+                        <h4>Grand Prix Selection</h4>
+                        <select name="Select a Season" required="true" ng-model="formData.Season" ng-change="getGrandPrix()">
+                            <option value="" selected>--Please select a year--</option>
+                            <option value=2010>2010</option>
+                            <option value=2011>2011</option>
+                            <option value=2012>2012</option>
+                            <option value=2013>2013</option>
+                            <option value=2014>2014</option>
+                        </select>
+                        <select name="GrandPrixSearch" ng-model="formData.GrandPrixSearch" required="true" ng-options="track for track in returnedGrandPrixData | orderBy:'toString()'">
+                            <option value="" selected>--Please select a track--</option>
+                        </select>
+                        <hr>
+                        <h4>Feature Selection</h4>
+                        <input type="checkbox" name="PreviousRace3" value="PreviousRace3" ng-model="formData.PreviousRace3">Previous Race 3<br/>
+                        <input type="checkbox" name="PreviousRace2" value="PreviousRace2" ng-model="formData.PreviousRace2">Previous Race 2<br/>
+                        <input type="checkbox" name="PreviousRace1" value="PreviousRace1" ng-model="formData.PreviousRace1">Previous Race 1<br/>
+                        <input type="checkbox" name="FP3Rank" value="FP3Rank" ng-model="formData.FP3Rank">Free Practice 3 Rank<br/>
+                        <input type="checkbox" name="StartPos" value="StartPos" ng-model="formData.StartPos">Start Position<br/>
+                        <div><input type="submit" value="Run Prediction"/></div>
+                    </form>
+
+                    <hr>
+
+                    <h4>Calculated Results</h4>
+                    Root Mean Squared Error: {{returnedData[0].MeanAbsoluteError}}
+                    <br/>
+                    Mean Absolute Error: {{returnedData[0].RootMeanSquare}}
+                    <br/>
+                    Feature 1 Correlation: {{returnedData[0].Correlation[0]}}
+                    <br/>
+                    Feature 2 Correlation: {{returnedData[0].Correlation[1]}}
+                    <br/>
+                    Feature 3 Correlation: {{returnedData[0].Correlation[2]}}
+                    <br/>
+                    Feature 4 Correlation: {{returnedData[0].Correlation[3]}}
+                    <br/>
+                    Feature 5 Correlation: {{returnedData[0].Correlation[4]}}
+
+                    <hr>
+                    <input type="submit" value="Update Prediction Table" ng-click="updateRacePrediction()"/>
+                    <button id="updateChampTableButton" type="button" ng-click="UpdateChampionshipTable()">Update Championship Table</button>
+                </div>
+                <div id="searchDatabaseBlock1" ng-class="seachDatabaseBlk">
+                    <h3>Driver Selection</h3>
+                    <hr>
+                    <select id="DriverSch" ng-model="DriverSearch" ng-options="driver.AbbreviatedName for driver in returnedDriverData | orderBy:'AbbreviatedName'">
+                        <option value="" selected>--Please select a driver--</option>
+                    </select>
+                    <br/>
+                    <br/>
+                    <img ng-src ="images/Drivers/{{DriverSearch.Imagelink}}"/>
+                </div>
+                <div id="userTutorialBlock1" ng-class="userTutorialBlk">
+                    <h3>This is the user tutorial stage</h3>
+                    Need to put note in here about how at least 10 data points are needed in order to perform k fold cross valiation testing
+                </div>
+                <div id="userRacePredictionBlock1" ng-class="userRacePredictionBlk">
+                    <h3> Members Prediction League</h3>
+                    <hr>
+                    <table id="userLeagueTable">
+                        <tr>
+                            <th>User</th>
+                            <th>Points</th>
+                        </tr>
+                        <tr ng-repeat="data in returnedUserPredictionTable | orderBy:['-points','userNickName']">
+                            <th><div>{{data.userNickName}}</div></th>
+                            <th><div>{{data.points}}</div></th>
+                        </tr>
+                    </table>
+                </div>
+                <div id="userPredictionBlock1" ng-class="userPredictionBlk">
+                    <h3>Enter your data</h3>
+                    <hr>
+                    <form ng-submit="processUserPrediction()">
+                        <textarea name="TrainingVar1" ng-model="userData.TrainingVar1" rows="3" cols="15" placeholder="Training: 1st Explanatory Variables" required="true"></textarea>
+                        <textarea name="TrainingVar2" ng-model="userData.TrainingVar2" rows="3" cols="15" placeholder="Training: 2nd Explanatory Variables"></textarea>
+                        <textarea name="TrainingVar3" ng-model="userData.TrainingVar3" rows="3" cols="15" placeholder="Training: 3rd Explanatory Variables"></textarea>
+                        <textarea name="TrainingVar4" ng-model="userData.TrainingVar4" rows="3" cols="15" placeholder="Training: 4th Explanatory Variables"></textarea>
+                        <br/><hr>
+                        <textarea name="TrainingResponse" ng-model="userData.TrainingResp" rows="3" cols="15" placeholder ="Training: Response Variables" required="true"></textarea>
+                        <br/><hr>
+                        <textarea name="TestingVar1" ng-model="userData.TestingVar1" rows="3" cols="15" placeholder = "Testing: 1st Explanatory Variables" required="true"></textarea>
+                        <textarea name="TestingVar2" ng-model="userData.TestingVar2" rows="3" cols="15" placeholder = "Testing: 2nd Explanatory Variables"></textarea>
+                        <textarea name="TestingVar3" ng-model="userData.TestingVar3" rows="3" cols="15" placeholder = "Testing: 3rd Explanatory Variables"></textarea>
+                        <textarea name="TestingVar4" ng-model="userData.TestingVar4" rows="3" cols="15" placeholder = "Testing: 4th Explanatory Variables"></textarea>
+                        <div><input type="submit" value="Run Prediction" /></div>
+                    </form>
+
+                    <hr>
+
+                    <h4>Calculated Results</h4>
+                    Root Mean Squared Error: {{returnedUserData[0].MeanAbsoluteError}}
+                    <br/>
+                    Mean Absolute Error: {{returnedUserData[0].RootMeanSquare}}
+                    <br/>
+                    Feature 1 Correlation: {{returnedUserData[0].Correlation[0]}}
+                    <br/>
+                    Feature 2 Correlation: {{returnedUserData[0].Correlation[1]}}
+                    <br/>
+                    Feature 3 Correlation: {{returnedUserData[0].Correlation[2]}}
+                    <br/>
+                    Feature 4 Correlation: {{returnedUserData[0].Correlation[3]}}
+
+                </div>
+
+                <div id="aboutBlock1" ng-class="aboutBlk">
+                    <h3>Message from the developer</h3>
+                    <hr>
+                    <p>Hello, my name is Eoin Farrell and thank you for visiting my website. This website has been developed in conjunction with my final year project dissertation in computer science, DIT. The backend framework has been developed in Java while running on the Google App Engine servers. Other technologies I have used while developing this project are Greensock (a javascript animation library) and GSON (a Google implementation for interacting with JSON data in Java).
+                    <br/><br/></p>
+                    LinkedIn Profile: <a href="http://ie.linkedin.com/in/eoinfarrell/">Eoin Farrell</a>
+
+                </div>
+
+                <div id="updateDatabaseBlock1" ng-class="updateDatabaseBlk">
+                    <h3>Track Selection</h3>
+                    <hr>
+                    <select name="TrackUpdate" ng-model="TrackUpdate" ng-options="circuit.CircuitName for circuit in returnedTrackData | orderBy:'CircuitName'">
+                        <option value="" selected>--Please select a track--</option>
+                    </select>
+                </div>
+
+                <div id="chatBlock1" ng-class="chatBlk">
+                    <h3>Chat</h3>
+                    <textarea name="chatTextBox" ng-model="chatTextBox" rows="3" cols="15"></textarea>
+                    <button id="chatBoxSubmitButton" type="button" ng-click= "chatSendMsg(chatTextBox)">Post</button>
+                </div>
+			</div>
+            
+			<div id="homeBlock2" ng-class="homeMiddleBlk">
+                
+				<div id="mainBlock2" ng-class="mainBlk">
+					<h3>News Article</h3>
+                    <hr>
+                    <div id="TestersNote" class="newsBlock" ng-show="TestersNoteCheck">
+                        <h3>Note to testers</h3>
+                        <p>This website has only been tested to work on chrome with javascript enabled.
+                        <br/><br/>
+                        When you first load this website it may need a second or two to fully load so that it can pull the above race data and other data from the websites servers.
+                        <br/><br/>
+                        This is a single page website, so the back and forward button of your browser will not work. Also if you refresh the page you will be returned to the home page.</p>
+                    </div>
+                    <div id="RedBullVideo" class="newsBlock" ng-show="RedBullVideoCheck">
+                        <h3>Red Bull 2014 rules video</h3>
+                        <br/>
+                        <iframe width="90%" height="65%" src="//www.youtube.com/embed/hFHmYFlbFn8" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    <div id="Malaysia" class="newsBlock" ng-show="MalaysiaCheck">
+                        <h3>Hamilton wins in Malaysia</h3>
+                        <img ng-src ="images/News/Lewis.jpg"/>
+                        <p>Lewis Hamilton won his first race of the season at the Malaysian GP on Sunday, gaining an early lead and quickly creating a gap between him and his team mate rosberg behind.</p>
+                    </div>
+                    <div id="MemberLeague" class="newsBlock" ng-show="MemberLeagueCheck">
+                        <h3>Members Leaderboard Roundup</h3>
+                        <p>And the leader after the first week is petuki with a massive 20 points, managing to correctly predict 4th place for Alonso and only one place off for Button and Gutierrez. Also racking up points was Erica, who was only one place off with both Vettel and Rosberg. Congrats to all for entering, with the first week now behind us, how will things shape up after week 2.</p>
+                        <br/>
+                        <p>A revision of the system may be in order in the future, due to the low points achieved in the first round</p>
+                    </div>
+				</div>
+				<div id="raceTutorialBlock2" ng-class="raceTutorialBlk">
+                    <h3>Dataset Overview</h3>
+                    <p>For this Formula 1 prediction, a user can chose between the following five explanatory variables:</p>
+                    <ul>
+                    <li>3rd Previous Race (PR3)</li>
+                    <li>2rd Previous Race (PR2)</li>
+                    <li>1rd Previous Race (PR1)</li>
+                    <li>Free Practice 3 Result (FP3)</li>
+                    <li>Start Position (StartPos)</li></ul>
+                    <p>These explanatory variables were chosen due to their correlation with the race result. This correlation was derived using Pearson's product-momnet correlation, which can be seen on the next page after a prediction has been run. </p>
+                    <hr>
+					<h3>Linear Regression Overview</h3>
+                    <p>For this application, linear regression has been chosen as the data mining prediction algorithm, to predict race results.Linear Regression can be thought of as selecting the best fitting line that can be drawn through the data points.This line of best fit attempts to reach as many of the data points as possible, or if not, to get as close to the majority of data points as possible. From this understanding we can say the line of best is the average relationship between the explanatory variables and the response variable, with some variation around it due to error</p>
+
+                    <p>When only one explanatory variable, such as the drivers previous race result, is uesd to predict the finish of the race, the algorithm for linear regression is: Y’ = B<sub>0</sub> + B<sub>1</sub>x + e. This formula states that the predicted race finish Y is equal to the point at which the line of best fit crosses the Y axis on a scatter plot/the intercept (B<sub>0</sub>) plus the slope of the line multiplyed by the drivers previous race result + an error rating. As linear regression attempts to find the line of best fit between all data points it is assumed, that the error value averages to 0.</p>
+
+                    <p>For two explanatory variables, such as free practice 3 result & drivers previous race the formula expands to Y’ = B<sub>0</sub> + B<sub>1</sub>x + B<sub>2</sub>x + e</p>
+				</div>
+                <div id="racePredictionBlock2" ng-class="racePredictionBlk">
+                    <h3>Prediction Results</h3>
+                    <hr>
+                        <table id="predictionTable">
+                            <tr>
+                                <th>Driver</th>
+                                <th ng-show="formData.PreviousRace3">PR3</th>
+                                <th ng-show="formData.PreviousRace2">PR2</th>
+                                <th ng-show="formData.PreviousRace1">PR1</th>
+                                <th ng-show="formData.FP3Rank">FP3</th>
+                                <th ng-show="formData.StartPos">Start</th>
+                                <th>Predicted</th>
+                                <th>Ranked Predicted</th>
+                                <th>Actual Finish</th>
+                            </tr>
+                            <tr ng-repeat="data in returnedData | orderBy:'PredictedFinishPosRanked':false">
+                                <td class="driverNameClick" ng-click="getDriver(data.DriverName,formData.GrandPrixSearch)"><div>{{data.DriverName}}</div></td>
+                                <td ng-show="formData.PreviousRace3"><input type="number" ng-model="data.PreviousRace3" min="0" max="24" ng-blur="updatePR3()" size="2"></input></td>
+                                <td ng-show="formData.PreviousRace2"><input type="number" ng-model="data.PreviousRace2" min="0" max="24" ng-blur="updatePR2()" size="2"></input></td>
+                                <td ng-show="formData.PreviousRace1"><input type="number" ng-model="data.PreviousRace1" min="0" max="24" ng-blur="updatePR1()" size="2"></input></td>
+                                <td ng-show="formData.FP3Rank"><input type="number" ng-model="data.FP3Rank" min="0" max="24" ng-blur="updateFP3()" size="2"></input></td>
+                                <td ng-show="formData.StartPos"><input type="number" ng-model="data.StartPos" min="0" max="24" ng-blur="updateStartPos()" size="2"></input></td>
+                                <td><div>{{data.PredictedFinishPos}}</div></td>
+                                <td><div>{{data.PredictedFinishPosRanked}}</div></td>
+                                <td><div>{{data.ActualFinishPos}}</div></td>
+                            </tr>
+                        </table>
+                </div>
+                <div id="searchDatabaseBlock2" ng-class="seachDatabaseBlk">
+                    <h3>Search Results</h3>
+                    <hr>
+                    <div id="searchDriverResults" class="searchDatabaseResults">
+                        <p><b>Driver Name:</b> {{DriverSearch.FirstName}} {{DriverSearch.MiddleName}} {{DriverSearch.LastName}} <br/>
+                        <b>Date of Birth:</b> {{DriverSearch.DateofBirth}}<br/>
+                        <b>Home Country:</b> {{DriverSearch.HomeCountry}}<br/>
+                        <b>Region:</b> {{DriverSearch.Region}}<br/>
+                        <b>Height:</b> {{DriverSearch.Height}}cm<br/>
+                        <b>Weight:</b> {{DriverSearch.Weight}}kg<br/>
+                        <b>World Championships:</b> {{DriverSearch.SeasonWins}}<br/>
+                        <b>Race Starts:</b> {{DriverSearch.RaceStarts}}<br/>
+                        <b>Podiums:</b> {{DriverSearch.Podiums}}<br/>
+                        <b>Pole Positions:</b> {{DriverSearch.PolePositions}}<br/>
+                        <b>Laps Raced:</b> {{DriverSearch.LapsRaced}}<br/>
+                        <b>Laps Led:</b> {{DriverSearch.LapsLed}}</p>
+                    </div>
+
+                    <hr>
+                    <div id="searchTrackResults" class="searchDatabaseResults">
+                        <p><b>Track Name:</b>{{TrackSearch.CircuitName}}<br/>
+                        <b>First Race:</b> {{TrackSearch.FirstYear}}<br/>
+                        <b>Last Race:</b> {{TrackSearch.LastYear}}<br/>
+                        <b>Region:</b> {{TrackSearch.Region}}<br/>
+                        <b>Country:</b> {{TrackSearch.Country}}<br/>
+                        <b>Grands Prix Held:</b> {{TrackSearch.GrandsPrixHeld}}<br/>
+                        <b>Length:</b> {{TrackSearch.TrackLength}}km<br/>
+                        <b>Turns:</b> {{TrackSearch.Turns}}<br/>
+                        <b>Lap Record:</b> {{TrackSearch.LapRecord}}<br/>
+                        <b>Lap Record Holder:</b> {{TrackSearch.LapRecordHolder}}<br/>
+                        <b>Description:</b> {{TrackSearch.Description}}<br/></p>
+                    </div>
+                </div>
+                <div id="userTutorialBlock2" ng-class="userTutorialBlk">
+                    <h3>This is the user tutorial stage</h3>
+                </div>
+                <div id="userRacePredictionBlock2" ng-class="userRacePredictionBlk">
+                    <h3>Member Race Prediction</h3>
+                    <hr>
+                        <p>On F1Prediction.appspot.com ,members can compete against one another in their attempts to predict the next Formula 1 race. These predictions are tracked throughout the season, as users gain points for correct race predictions and are ranked in middle table of this page.
+                        <br/><br/>
+                        To take part simply login to F1Prediction.appspot.com with your Google account and then enter your prediction for the {{returnedNextRace[0].GPName}} before the {{returnedNextRace[0].date}} within the table on the right side of this page.
+                        When you have finished picking your prediction hit the button below and your prediction will be uploaded to our server, so you can compete with friends and colleagues.
+                        Your prediction will be stored so you can come back and change it at any time.</p>
+                        <p>Driver results are taken from FIA classification sheets, as such any driver who does not finish, will be given the position in which he crashed, eg 3rd car to crash will be placed in 20.</p>
+                        <ul>
+                        <li>10 Points = Correct Position</li>
+                        <li>5 Points = 1 Place Off</li>
+                        <li>5 Bonus Points = Predict Winner</li>
+                        </ul>
+
+                        <button id="insertUserPred" type="button" ng-click= "insertUserPrediction()">Insert prediciton</button>
+                </div>
+                <div id="userPredictionBlock2" ng-class="userPredictionBlk">
+                    <h3>User Prediction Results</h3>
+                    <hr>
+                    <table id="predictionTable">
+                            <tr>
+                                <th>Feature1</th>
+                                <th>Feature2</th>
+                                <th>Feature3</th>
+                                <th>Feature4</th>
+                                <th>Predicted</th>
+                                <th>Ranked Predicted</th>
+                            </tr>
+                            <tr ng-repeat="data in returnedUserData">
+                                <td><div>{{data.PreviousRace3}}</div></td>
+                                <td><div>{{data.PreviousRace2}}</div></td>
+                                <td><div>{{data.PreviousRace1}}</div></td>
+                                <td><div>{{data.FP3Rank}}</div></td>
+                                <td><div>{{data.PredictedFinishPos}}</div></td>
+                                <td><div>{{data.PredictedFinishPosRanked}}</div></td>
+                            </tr>
+                        </table>
+                </div>
+
+                <div id="updateDatabaseBlock2" ng-class="updateDatabaseBlk">
+                    <h3>Change Track Information</h3>
+                    <hr>
+                    <p>
+                        <b>Track Name:</b> {{TrackUpdate.CircuitName}}<br/>
+                        <b>First Race:</b><input ng-model="TrackUpdate.FirstYear"></input><br/>
+                        <b>Region:</b><input ng-model="TrackUpdate.Region"></input><br/>
+                        <b>Country:</b><input ng-model="TrackUpdate.Country"></input><br/>
+                        <b>Grands Prix Held:</b><input type="number" ng-model="TrackUpdate.GrandsPrixHeld"></input><br/>
+                        <b>Length:</b><input type="number" ng-model="TrackUpdate.TrackLength"></input>Km<br/>
+                        <b>Turns:</b><input type="number" ng-model="TrackUpdate.Turns"></input><br/>
+                        <b>Lap Record:</b><input ng-model="TrackUpdate.LapRecord"></input><br/>
+                        <b>Lap Record Holder:</b><input ng-model="TrackUpdate.LapRecordHolder"></input><br/>
+                        <b>Description:</b><br/><textarea id="trackUpdateDescription" ng-model="TrackUpdate.Description" rows="7" cols="20"></textarea></p><br/>
+                        <button id="submitTrackDataUpdate" type="button" ng-click="submitTrackDataUpdate()">Update</button>
+
+                </div>
+
+                <div id="aboutBlock2" ng-class="aboutBlk">
+                    <h3>F1Prediction</h3>
+                    <hr>
+                    <p>Sports science is a new and expanding field of research in many competitive sports and many teams are now choosing to utilise data mining techniques to improve different aspects of their game such as training, coaching, and selection of players as well as prediction. This project will create a web application hosted on Google App Engine and using the available Google toolkits and APIs. It will utilise linear regression to predict the outcome of Formula 1 race results using data from race weekends including practice, qualifying and race data covering the last four years. As there is no readily available F1 dataset, the dataset will be created from data available from the F1 governing body website along with data stored by Forix, a data collection website for motor racing. The data is collected, cleansed, sorted and analysed using Excel and visual basic coding before been uploaded to Google cloud storage, where it can be accessed by the web application. Time permitting and following the successful development of the prediction algorithm the web application will be developed to act as an eLearning tool. In this regard the Formula 1 prediction will become an example set on how data mining techniques can be used to generate relevant results. It will teach users with little to no data mining knowledge how the prediction is created by display subsets of the data along with an explanation of linear regression and how it can be used outside of F1.</p>
+                </div>
+
+                <div id="chatBlock2" ng-class="chatBlk">
+                    <h3>Chat</h3>
+                </div>
+
+			</div>
+
+            
+			<div id="homeBlock3" ng-class="homeBlk">
+                
+				<div id="mainBlock3" ng-class="mainBlk">
+					<h3>Twitter</h3>
+                    <hr>
+                    <br/>
+                    <div id="twitterBlock">  
+                        <!--This code was generated by twitter with tweaks made following twitter documentation to apply transpaerency, different colour
+                        links and to remove headers and footers-->  
+                        <a class="twitter-timeline" href="https://twitter.com/Crazyfrog239/formula1" data-widget-id="447387552605949953" data-theme="dark" data-link-color="#00E9C2" data-chrome="noheader nofooter transparent" width="90%" height="100%">Tweets from https://twitter.com/Crazyfrog239/formula1</a>
+                        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+                    </div>
+				</div>
+				<div id="raceTutorialBlock3" ng-class="raceTutorialBlk">
+					<h3>How to use the Predictor</h3>
+                    <p>On the next page is the race prediction model. On this page you are presented with three new columns.</p>
+                    <p>In the first column, you may select which race you wish to predict. To do this you must select what season the race you wish to predict occured and you must then select the track. After you have decided this, you must next select which explanatory variables you wish to use (try selecting them all to begin). When you completed this you can then select the run prediction button, and the model for that selection will be created in the background, and you will see its results in the middle column.</p>
+                    <p>When you run the prediciton your results will be displayed in the middle column, along with all the information of the explanatory variables for each driver. The drivers are in order of their ranked predicted finish and if it is a historic race you are predicting their actual finish will be displayed to.</p>
+                    <p>If you feel that one of the drivers, should have had a better start position in the race, or their previous race was not up to scratch, you may chnage thier results. This will update the results of the other drivers, and when you are happy with your new explanatory features, in the first column you may select the button to update the race prediciton. Which will re-run the race prediction, but using the explanatory varialbes that you have decided upon.</p>
+                    <p>In the third column is the driver championship table. This table displays the state of drivers championship, if the prediction came through. You may change the predicted finish of drivers and when you are done, in the first column again, hit the update championship table button, and the new championship table will be displayed with the race predicitons you have selected.</p>
+                    <button id="raceTutorialButton" type="button" ng-click= "raceTutorialClick()">Continue</button>
+				</div>
+                <div id="racePredictionBlock3" ng-class="racePredictionBlk">
+                    <h3>Predicted Championship Table</h3>
+                    <hr>
+                        <table id="predictionTable">
+                            <tr>
+                                <th>Driver</th>
+                                <th>Current Points</th>
+                                <th>Predicted Finish</th>
+                                <th>Predicted Points</th>
+                            </tr>
+                            <tr ng-repeat="data in returnedData  | orderBy:['-PredictedPoints','PredictedFinishPosRankedTable']">
+                                <td class="driverNameClick" ng-click="getDriver(data.DriverName,formData.GrandPrixSearch)"><div>{{data.DriverName}}</div></td>
+                                <td><div>{{data.CurrentPoints}}</div></td>
+                                <td><input type="number" ng-model="data.PredictedFinishPosRankedTable" min="0" max="24" ng-blur="updateDriverChampionshipRanking()"></input></td>
+                                <td><div>{{data.PredictedPoints}}</div></td>
+                            </tr>
+                        </table>
+                     <!--<div id="chart_div" style="width: 100%; height: 100%;"></div>-->
+
+                </div>
+                <div id="searchDatabaseBlock3" ng-class="seachDatabaseBlk">
+                    <h3>Track Selection</h3>
+                    <hr>
+                    <select name="TrackSearch" ng-model="TrackSearch" ng-options="circuit.CircuitName for circuit in returnedTrackData | orderBy:'CircuitName'">
+                        <option value="" selected>--Please select a track--</option>
+                    </select>
+                    <br/>
+                    <img ng-src ="images/Tracks/{{TrackSearch.ImageLink}}"/>
+                </div>
+                <div id="userTutorialBlock3" ng-class="userTutorialBlk">
+                    <h3>This is the user tutorial stage</h3>
+                    This is a second test<button id="raceTutorialButton" type="button" ng-click= "userTutorialClick()">Continue</button>
+                </div>
+                <div id="userRacePredictionBlock3" ng-class="userRacePredictionBlk">
+                    <h3>Select Prediction</h3>
+                    <hr>
+                    <table id="userRacePrediction">
+                        <tr>
+                            <th>Driver</th>
+                            <th>Start Pos</th>
+                            <th>Your Prediction</th>
+                        </tr>
+                        <tr ng-repeat="data in returnedNextRace">
+                            <td class="driverNameClick" ng-click="getDriver(data.driverName,returnedNextRace[0].circuitName)"><div>{{data.driverName}}</div></td>
+                            <td><div>{{data.startPos}}</div></td>
+                            <td><input type="number" ng-model="data.prediction" min="0" max="22" ng-blur="updateUserPrediction()"></input></td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="userPredictionBlock3" ng-class="userPredictionBlk">
+                    <h3>This is the user prediction stage</h3>
+                </div>
+
+                <div id="updateDatabaseBlock3" ng-class="updateDatabaseBlk">
+                    <h3>This is the db update page</h3>
+                </div>
+
+                <div id="aboutBlock3" ng-class="aboutBlk">
+                    <h3>Website Architecture</h3>
+                    <hr>
+                    <img ng-src ="images/HighLevelSystemOverview.png"/>
+                </div>
+
+                <div id="chatBlock3" ng-class="chatBlk">
+                    <h3>Chat</h3>
+                </div>
+
+			</div>
+            
+		</div>
+        
+		<div id="footerContainer">
+            <div id="footerbar">
+    			<div id="footer1" ng-class="footerBlk" ng-click="aboutClick()">
+    				<h3>About</h3>
+    			</div>
+                <div id="footer2" ng-class="footerBlk" ng-click="updateDatabaseClick()">
+                    <h3>Update Database</h3>
+                </div>
+                <!--<div id="footer3" ng-class="footerBlk" ng-click="chatClick()">
+                    <h3>Chat</h3>
+                </div>-->
+                <div id="footer4" ng-class="footerBlk" ng-click="userOwnPredictionClick()">
+                    <h3>Prediction Algorithm</h3>
+                </div>
+                <div id="footer5" ng-class="footerBlk" ng-click="feedbackClick()">
+                    <h3>Feedback</h3>
+                </div>
+            </div>
+		</div>
+
+		<script>
+			angular.module('F1Prediction',[]);
+
+			function appCtrl($scope, $http) 
+            {
+			
+                //set all unsed pages to be hidden in css
+				$scope.homeBlk = 'homeBlockVisible';
+                $scope.homeMiddleBlk = 'homeMiddleVisible';
+                
+                $scope.mainBlk = 'blockVisible';
+
+                $scope.raceTutorialBlk = 'blockHidden';
+                $scope.racePredictionBlk = 'blockHidden';
+                $scope.seachDatabaseBlk = 'blockHidden';
+                $scope.userTutorialBlk = 'blockHidden';
+                $scope.userPredictionBlk = 'blockHidden';
+                $scope.updateDatabaseBlk = 'blockHidden';
+                $scope.aboutBlk = 'blockHidden';
+                $scope.userRacePredictionBlk = 'blockHidden';
+                $scope.chatBlk = 'blockHidden';
+
+                $scope.footerBlk = 'footerBlk';
+
+                $scope.headerBlk = 'headerBlk';
+
+
+
+                //rotationY variable to increase rotation of divs each time
+                var rotY = 0;
+
+                //this is run on page load
+                $scope.$watch('$viewContentLoaded', function() 
+                {
+                    //on page load
+                    //need to check if user is already logged into google services here
+                    //so i can show or hide the sign in button
+
+                    $scope.TestersNoteCheck = true;
+                    $scope.RedBullVideoCheck = false;
+                    $scope.MalaysiaCheck = false;
+                    $scope.MemberLeagueCheck = false;
+
+                    $http.get('/UserSignIn', {headers: {'Type': 'checkSignIn'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if user is signed in, set to true
+                                if(data == "true")
+                                {
+                                    $scope.SignedIn = true;
+                                }
+                                else
+                                {
+                                    $scope.SignedIn = false;
+                                }
+                            }
+                    });
+
+                    //get the info for the next race so it can be displayed on the home screen in the middle block
+                    $scope.getNextRace();
+                });
+
+                //this function is used to hide all of the pages of the website
+                //this is done using greensock, but could also be done using just css, to change class
+                $scope.clearAll = function()
+                {
+                    var main1Transition = document.getElementById("mainBlock1");
+                    var main2Transition = document.getElementById("mainBlock2");
+                    var main3Transition = document.getElementById("mainBlock3");
+
+                    var raceTut1Transition = document.getElementById("raceTutorialBlock1");
+                    var raceTut2Transition = document.getElementById("raceTutorialBlock2");
+                    var raceTut3Transition = document.getElementById("raceTutorialBlock3");
+
+                    var racePred1Transition = document.getElementById("racePredictionBlock1");
+                    var racePred2Transition = document.getElementById("racePredictionBlock2");
+                    var racePred3Transition = document.getElementById("racePredictionBlock3");
+
+                    var search1Transition = document.getElementById("searchDatabaseBlock1");
+                    var search2Transition = document.getElementById("searchDatabaseBlock2");
+                    var search3Transition = document.getElementById("searchDatabaseBlock3");
+
+                    var userTut1Transition = document.getElementById("userTutorialBlock1");
+                    var userTut2Transition = document.getElementById("userTutorialBlock2");
+                    var userTut3Transition = document.getElementById("userTutorialBlock3");
+
+                    var userPred1Transition = document.getElementById("userPredictionBlock1");
+                    var userPred2Transition = document.getElementById("userPredictionBlock2");
+                    var userPred3Transition = document.getElementById("userPredictionBlock3");
+
+                    var updateDB1Transition = document.getElementById("updateDatabaseBlock1");
+                    var updateDB2Transition = document.getElementById("updateDatabaseBlock2");
+                    var updateDB3Transition = document.getElementById("updateDatabaseBlock3");
+
+                    var userRacePred1Transition = document.getElementById("userRacePredictionBlock1");
+                    var userRacePred2Transition = document.getElementById("userRacePredictionBlock2");
+                    var userRacePred3Transition = document.getElementById("userRacePredictionBlock3");
+
+                    var about1Transition = document.getElementById("aboutBlock1");
+                    var about2Transition = document.getElementById("aboutBlock2");
+                    var about3Transition = document.getElementById("aboutBlock3");
+
+                    var chat1Transition = document.getElementById("chatBlock1");
+                    var chat2Transition = document.getElementById("chatBlock2");
+                    var chat3Transition = document.getElementById("chatBlock3");
+
+
+                    //greensock api to hide all pages held in variables
+                    TweenLite.to([main1Transition,main2Transition,main3Transition,raceTut1Transition,raceTut2Transition,raceTut3Transition,racePred1Transition,racePred2Transition,racePred3Transition,search1Transition,search2Transition,search3Transition,userTut1Transition,userTut2Transition,userTut3Transition,userPred1Transition,userPred2Transition,userPred3Transition,updateDB1Transition,updateDB2Transition,updateDB3Transition,userRacePred1Transition,userRacePred2Transition,userRacePred3Transition,about1Transition,about2Transition,about3Transition,chat1Transition,chat2Transition,chat3Transition],0,{display: 'none'});
+
+                }
+
+                //function to bring up homepage for when user clicks header
+                $scope.headerHomeClick = function()
+                {
+                    //clear all other pages
+                    $scope.clearAll();
+
+                    var main1Transition = document.getElementById("mainBlock1");
+                    var main2Transition = document.getElementById("mainBlock2");
+                    var main3Transition = document.getElementById("mainBlock3");
+
+                    //greensock api to make homepage visible
+                    TweenLite.to([main1Transition,main2Transition,main3Transition],0,{display: 'inline-block'});
+
+                    //get next race data for display on the middle homescreen page
+                    $scope.getNextRace();
+                }
+
+                //function to bring up race prediciton algorithm page for when user clicks header
+                $scope.headerRaceClick = function()
+                {
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    var race1Transition = document.getElementById("raceTutorialBlock1");
+                    var race2Transition = document.getElementById("raceTutorialBlock2");
+                    var race3Transition = document.getElementById("raceTutorialBlock3");
+                    
+                    var tl = new TimelineLite();
+                    
+                    //greensock api to make tuorial page visible, hide homepage and run animation
+                    tl.staggerTo([block1Transition,block2Transition,block3Transition],1, {height:"0%",onComplete:$scope.clearAll},0.4)
+                      .staggerTo([block1Transition,block2Transition,block3Transition],1, {opacity:0},0.4,"-=1.9")
+                      .to([race2Transition,race1Transition,race3Transition],0.0,{display:'inline-block'},"+=0.01")
+                      .staggerTo([block1Transition,block2Transition,block3Transition],1, {height:"100%"},0.4,"-=0.3")
+                      .staggerTo([block1Transition,block2Transition,block3Transition],2.5, {opacity:0.9},0.4,"-=2.1");
+                }
+
+                //function to bring up search database page for when user clicks header
+                $scope.headerDBClick = function()
+                {
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    var search1Transition = document.getElementById("searchDatabaseBlock1");
+                    var search2Transition = document.getElementById("searchDatabaseBlock2");
+                    var search3Transition = document.getElementById("searchDatabaseBlock3");
+                    
+                    var tl = new TimelineLite();
+
+                    //greensock api to make search database page visible, hide homepage and run animation
+                    tl.staggerTo([block2Transition,[block1Transition,block3Transition]],1, {height:"0%",onComplete:$scope.clearAll},0.4)
+                      .staggerTo([block2Transition,[block1Transition,block3Transition]],1, {opacity:0},0.4,"-=1.5")
+                      .to([search2Transition,search1Transition,search3Transition],0.0,{display:'inline-block'},"+=0.1")
+                      .staggerTo([block2Transition,[block1Transition,block3Transition]],1.3, {height:"100%"},0.4,"-=0.3")
+                      .staggerTo([block2Transition,[block1Transition,block3Transition]],2.5, {opacity:0.9},0.4,"-=1.9");
+
+                    //need to get all driver and track names so they can be used in search fields
+                    $scope.getTrackandDriverData();              
+                }
+
+                //function to bring up members prediction league page for when user clicks header
+                $scope.headerLeagueClick = function()
+                {
+                    //reset all data held in the current session
+                    $scope.resetPageData();
+
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    var userRacePred1Transition = document.getElementById("userRacePredictionBlock1");
+                    var userRacePred2Transition = document.getElementById("userRacePredictionBlock2");
+                    var userRacePred3Transition = document.getElementById("userRacePredictionBlock3");
+                    
+                    var tl = new TimelineLite();
+                    
+                    //greensock api to make members prediction league page visible, hide homepage and run animation
+                    tl.staggerTo([block3Transition,block2Transition,block1Transition],1, {height:"0%",onComplete:$scope.clearAll},0.4)
+                      .staggerTo([block3Transition,block2Transition,block1Transition],1, {opacity:0},0.4,"-=1.9")
+                      .to([userRacePred2Transition,userRacePred1Transition,userRacePred3Transition],0.0,{display:'inline-block'},"+=0.1")
+                      .staggerTo([block3Transition,block2Transition,block1Transition],1, {height:"100%"},0.4,"-=0.3")
+                      .staggerTo([block3Transition,block2Transition,block1Transition],2.5, {opacity:0.9},0.4,"-=2.1");
+
+                    //we must then get the next race data, so that we have the next race for a user to predict
+                    $scope.getNextRace();
+                    //also must get the user league table and their previous prediction
+                    $scope.getUserLeague();
+                }
+
+                $scope.changeNews = function(story)
+                {
+                    $scope.TestersNoteCheck = false;
+                    $scope.RedBullVideoCheck = false;
+                    $scope.MalaysiaCheck = false;
+                    $scope.MemberLeagueCheck = false;
+
+                    console.log(story);
+
+                    if(story == "TestersNote")
+                    {
+                        $scope.TestersNoteCheck = true;
+                    }
+                    else if(story == "RedBullVideo")
+                    {
+                        $scope.RedBullVideoCheck = true;
+                    }
+                    else if(story == "Malaysia")
+                    {
+                        $scope.MalaysiaCheck = true;
+                    }
+                    else if(story == "MemberLeague")
+                    {
+                        $scope.MemberLeagueCheck = true;
+                    }
+                }
+
+                //this function queries the database to return the track and driver data
+                //if a particular driver or track is given it will just get this data, 
+                //otherwise it will return all drivers
+                $scope.getTrackandDriverData = function(initialDriver, initialTrack)
+                {
+                    $http.post('/SearchDriver')
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.returnedDriverData = data;
+
+                                if(initialDriver == null)
+                                {
+
+                                }
+                                else
+                                {
+                                    for(i=0;i<$scope.returnedDriverData.length;i++)
+                                    {
+                                        if($scope.returnedDriverData[i].AbbreviatedName == initialDriver)
+                                        {
+                                            $scope.DriverSearch = $scope.returnedDriverData[i];
+                                        }
+                                    } 
+                                }
+                            }
+                    });
+
+                    $http.post('/SearchTrack')
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.returnedTrackData = data;
+
+                                if(initialTrack == null)
+                                {
+
+                                }
+                                else
+                                {
+                                    for(i=0;i<$scope.returnedTrackData.length;i++)
+                                    {
+                                        if($scope.returnedTrackData[i].CircuitName == initialTrack)
+                                        {
+                                            $scope.TrackSearch = $scope.returnedTrackData[i];
+                                        }
+                                    } 
+                                }
+                            }
+                    });
+                }
+                
+                //this function hides the race tutorial block and displays the algorithm race prediction page 
+                $scope.raceTutorialClick = function(){
+
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    var tut1Transition = document.getElementById("raceTutorialBlock1");
+                    var tut2Transition = document.getElementById("raceTutorialBlock2");
+                    var tut3Transition = document.getElementById("raceTutorialBlock3");
+
+                    var pred1Transition = document.getElementById("racePredictionBlock1");
+                    var pred2Transition = document.getElementById("racePredictionBlock2");
+                    var pred3Transition = document.getElementById("racePredictionBlock3");
+                    
+                    var tl = new TimelineLite();
+                    rotY = rotY + 360;
+                    
+                    //greensock api to make race prediciton algorithm page visible, hide race tutorial page and run animation
+                    tl.staggerTo([block1Transition,block2Transition,block3Transition],1.5,{rotationY:rotY,perspective:500},"start")
+                    .to([tut1Transition,tut2Transition,tut3Transition],1,{display:'none'},"-=2.3")
+                    .to([pred1Transition,pred2Transition,pred3Transition],1,{display:'inline-block'},"-=0.7");
+                }
+
+                //this function hides the user tutorial block and displays the user data prediciton algorithm page
+                $scope.userTutorialClick = function(){
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    var tut1Transition = document.getElementById("userTutorialBlock1");
+                    var tut2Transition = document.getElementById("userTutorialBlock2");
+                    var tut3Transition = document.getElementById("userTutorialBlock3");
+
+                    var pred1Transition = document.getElementById("userPredictionBlock1");
+                    var pred2Transition = document.getElementById("userPredictionBlock2");
+                    var pred3Transition = document.getElementById("userPredictionBlock3");
+                    
+                    var tl = new TimelineLite();
+                    rotY = rotY + 360;
+                    
+                    //greensock api to make user data prediciton algorithm page visible, hide user tutorial page and run animation
+                    tl.staggerTo([block1Transition,block2Transition,block3Transition],1.5,{rotationY:rotY,perspective:500},"start")
+                    .to([tut1Transition,tut2Transition,tut3Transition],1,{display:'none'},"-=2.3")
+                    .to([pred1Transition,pred2Transition,pred3Transition],1,{display:'inline-block'},"-=0.7");
+                }
+				
+                //this function is run when a user selects a year for the race they are going to predict on the race prediction algorihtm page and gets the races for that season
+                $scope.getGrandPrix = function()
+                {
+                    $http.post('/SearchGrandPrixEvents', $scope.formData)
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.returnedGrandPrixData = data;
+                            }
+                    });
+
+                }
+				
+				//this function processes the selections of the features a user has selected on the race prediction algorithm screen, and then sends these to the server before recieving back the race prediction and detials
+				$scope.processRacePrediction = function() 
+				{
+                    // create a blank object to hold our form information
+				    // $scope will allow this to pass between controller and vie
+                    
+					$http.post('/UserPrediction', $scope.formData, {headers: {'Type': 'racePrediction'}})
+					.success(function(data) 
+					{
+				            console.log(data);
+				            if (data == null) 
+				            {
+				            	// if not successful, bind errors to error variables
+				                alert("Something went wrong :( Please refresh the page and try again");
+				            } 
+				            else 
+				            {
+				            	// if successful, bind success message to message
+                                $scope.returnedData = data;
+                                //original data is used in case a user changes a drivers position so that the other drivers can be updated against this
+                                $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                                //the championship table is updated with the new points for each individual driver
+                                $scope.UpdateChampionshipTable();
+                			}
+                	});
+                }
+
+                //this function is used when a user has changed some of the driver positions for the features of a race and then runs the prediction using the new data set
+                $scope.updateRacePrediction = function()
+                {
+                    $http.post('/UserPrediction', $scope.returnedData, {headers: {'Type': 'updateRacePrediction'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null) 
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.returnedData = data;
+                                //original data is used in case a user changes a drivers position so that the other drivers can be updated against this
+                                $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                                //the championship table is updated with the new points for each individual driver
+                                $scope.UpdateChampionshipTable();
+                            }
+                    });
+                }
+
+                //this function is called when a user clicks the sign in button, and returns the correct url for the user to login and then redirects them
+                $scope.SignIn = function()
+                {
+                    $http.get('/UserSignIn', {headers: {'Type': 'SignIn'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                window.location.href = data;
+                                $scope.SignedIn = true;
+                            }
+                    });
+                }
+
+                //this function is used to pass the data that a user has entered for the user prediction algorithm, to the server where the linear regression algorithm can be run
+                $scope.processUserPrediction = function()
+                {
+                    
+                    $http.post('/UserPrediction', $scope.userData, {headers: {'Type': 'userPrediction'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null || data.error == true) 
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.returnedUserData = data;
+
+                                if($scope.returnedUserData[0].error != "No Error")
+                                {
+                                    alert($scope.returnedUserData[0].error);
+                                }
+                            }
+                    });
+                }
+
+                //Ideally given more time, the following, 7 functions would be reduced to just 1 were the correct parameters would be passed in
+
+                //function to sort driver championship points table
+                $scope.updateDriverChampionshipRanking = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].PredictedFinishPosRankedTable != $scope.returnedData[i].PredictedFinishPosRankedTable)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].PredictedFinishPosRankedTable;
+                            var newPosition = $scope.returnedData[i].PredictedFinishPosRankedTable;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].PredictedFinishPosRankedTable == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].PredictedFinishPosRankedTable--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].PredictedFinishPosRankedTable++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].PredictedFinishPosRankedTable > newPosition && $scope.returnedDataOriginal[i].PredictedFinishPosRankedTable < oldPosition)
+                        {
+                            $scope.returnedData[i].PredictedFinishPosRankedTable++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].PredictedFinishPosRankedTable < newPosition && $scope.returnedDataOriginal[i].PredictedFinishPosRankedTable > oldPosition)
+                        {
+                            $scope.returnedData[i].PredictedFinishPosRankedTable--;
+                        }
+                    }
+
+                    //update the points of the table
+                    $scope.UpdateChampionshipTable();
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+
+                //function to sort driver previous race 3 coloumn
+                $scope.updatePR3 = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].PreviousRace3 != $scope.returnedData[i].PreviousRace3)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].PreviousRace3;
+                            var newPosition = $scope.returnedData[i].PreviousRace3;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].PreviousRace3 == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].PreviousRace3--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].PreviousRace3++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].PreviousRace3 > newPosition && $scope.returnedDataOriginal[i].PreviousRace3 < oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace3++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].PreviousRace3 < newPosition && $scope.returnedDataOriginal[i].PreviousRace3 > oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace3--;
+                        }
+                    }
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+                //function to sort driver previous race 2 coloumn
+                $scope.updatePR2 = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].PreviousRace2 != $scope.returnedData[i].PreviousRace2)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].PreviousRace2;
+                            var newPosition = $scope.returnedData[i].PreviousRace2;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].PreviousRace2 == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].PreviousRace2--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].PreviousRace2++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].PreviousRace2 > newPosition && $scope.returnedDataOriginal[i].PreviousRace2 < oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace2++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].PreviousRace2 < newPosition && $scope.returnedDataOriginal[i].PreviousRace2 > oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace2--;
+                        }
+                    }
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+                //function to sort driver previous race 1 coloumn
+                $scope.updatePR1 = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].PreviousRace1 != $scope.returnedData[i].PreviousRace1)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].PreviousRace1;
+                            var newPosition = $scope.returnedData[i].PreviousRace1;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].PreviousRace1 == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].PreviousRace1--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].PreviousRace1++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].PreviousRace1 > newPosition && $scope.returnedDataOriginal[i].PreviousRace1 < oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace1++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].PreviousRace1 < newPosition && $scope.returnedDataOriginal[i].PreviousRace1 > oldPosition)
+                        {
+                            $scope.returnedData[i].PreviousRace1--;
+                        }
+                    }
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+                //function to sort driver free practice 3 coloumn
+                $scope.updateFP3 = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].FP3Rank != $scope.returnedData[i].FP3Rank)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].FP3Rank;
+                            var newPosition = $scope.returnedData[i].FP3Rank;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].FP3Rank == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].FP3Rank--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].FP3Rank++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].FP3Rank > newPosition && $scope.returnedDataOriginal[i].FP3Rank < oldPosition)
+                        {
+                            $scope.returnedData[i].FP3Rank++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].FP3Rank < newPosition && $scope.returnedDataOriginal[i].FP3Rank > oldPosition)
+                        {
+                            $scope.returnedData[i].FP3Rank--;
+                        }
+                    }
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+                //function to sort driver start position coloumn
+                $scope.updateStartPos = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        if($scope.returnedDataOriginal[i].StartPos != $scope.returnedData[i].StartPos)
+                        {
+                            var oldPosition = $scope.returnedDataOriginal[i].StartPos;
+                            var newPosition = $scope.returnedData[i].StartPos;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    //currently only works when you use chrome buttons
+                    for(var i = 0;i < $scope.returnedData.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedDataOriginal[i].StartPos == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedData[i].StartPos--;
+                            }
+                            else
+                            {
+                                $scope.returnedData[i].StartPos++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedDataOriginal[i].StartPos > newPosition && $scope.returnedDataOriginal[i].StartPos < oldPosition)
+                        {
+                            $scope.returnedData[i].StartPos++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedDataOriginal[i].StartPos < newPosition && $scope.returnedDataOriginal[i].StartPos > oldPosition)
+                        {
+                            $scope.returnedData[i].StartPos--;
+                        }
+                    }
+
+                    //store the new ranking
+                    $scope.returnedDataOriginal = angular.copy($scope.returnedData);
+                }
+
+                //function to sort drivers for members league prediction
+                $scope.updateUserPrediction = function()
+                {
+                    //this is used to find the driver that has changed and store his new and old position
+                    for(var i = 0;i < $scope.returnedNextRace.length;i++)
+                    {
+                        if($scope.returnedNextRaceOriginal[i].prediction != $scope.returnedNextRace[i].prediction)
+                        {
+                            var oldPosition = $scope.returnedNextRaceOriginal[i].prediction;
+                            var newPosition = $scope.returnedNextRace[i].prediction;
+                        }
+                    }
+
+                    //this is then used to change any other values that have been effected by this change
+                    for(var i = 0;i < $scope.returnedNextRace.length;i++)
+                    {
+                        //finds driver that currently ocuppies the new drivers position
+                        if($scope.returnedNextRaceOriginal[i].prediction == newPosition)
+                        {
+                            if(newPosition > oldPosition)
+                            {
+                                $scope.returnedNextRace[i].prediction--;
+                            }
+                            else
+                            {
+                                $scope.returnedNextRace[i].prediction++;
+                            }
+                        }
+                        //find driver that is in the middle of new drivers decreasing move 
+                        else if($scope.returnedNextRaceOriginal[i].prediction > newPosition && $scope.returnedNextRaceOriginal[i].prediction < oldPosition)
+                        {
+                            $scope.returnedNextRace[i].prediction++;
+                        }
+                        //find driver that is in the middle of new drivers increasing move
+                        else if($scope.returnedNextRaceOriginal[i].prediction < newPosition && $scope.returnedNextRaceOriginal[i].prediction > oldPosition)
+                        {
+                            $scope.returnedNextRace[i].prediction--;
+                        }
+                    }
+                    //store the new ranking
+                    $scope.returnedNextRaceOriginal = angular.copy($scope.returnedNextRace);
+                }
+
+                //this function is used to update the points of a driver in the championship table, after a predicted race
+                $scope.UpdateChampionshipTable = function()
+                {
+                    //loops through each driver and finds their finish positon and then adds the relavent points, this could have been done using a switch statement instead
+                    for (var i = 0; i < $scope.returnedData.length; i++) 
+                    {
+                        if($scope.returnedData[i].PredictedFinishPosRankedTable == 1)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 25;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 2)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 18;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 3)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 15;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 4)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 12;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 5)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 10;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 6)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 8;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 7)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 6;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 8)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 4;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 9)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 2;
+                        }
+                        else if($scope.returnedData[i].PredictedFinishPosRankedTable == 10)
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints + 1;
+                        }
+                        else
+                        {
+                            $scope.returnedData[i].PredictedPoints = $scope.returnedData[i].CurrentPoints;
+                        }
+                    }   
+                }
+
+                //this function is used when a user clicks on a drivers name on the race prediction algorithm page or the members prediction league page
+                $scope.getDriver = function(driver,track)
+                {
+                    var driverName = driver;
+
+                    console.log(track);
+
+                    var trackName = track;
+                    
+                    $scope.headerDBClick();
+
+                    $scope.getTrackandDriverData(driverName,trackName);
+                }
+
+                //this function hides all pages and displays the about page
+                $scope.aboutClick = function()
+                {
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    //greensock api to animate the home page block before calling the zoom back funciton on completion
+                    TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:0.1,opacity:0.1,onComplete: zoomBack},0.35);
+
+                    //funciton used to show the about page and hide all pages and complete the animation.
+                    function zoomBack()
+                    {
+                        var about1Transition = document.getElementById("aboutBlock1");
+                        var about2Transition = document.getElementById("aboutBlock2");
+                        var about3Transition = document.getElementById("aboutBlock3");
+
+                        //hide all pages
+                        $scope.clearAll();
+
+                        //greensock api to show the about page and complete the animate
+                        TweenLite.to([about1Transition,about2Transition,about3Transition],0.0,{display:'inline-block'})
+                        TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:1,opacity:0.95},0.35);
+                    }
+                }
+
+                //this function hides all pages and displays the update database page
+                $scope.updateDatabaseClick = function()
+                {
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    //greensock api to animate the home page block before calling the zoom back function on completion
+                    TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:0.1,opacity:0.1,onComplete: zoomBack},0.35);
+
+                    //calls function to get track and driver data, so that the user can update this data, on the page you can 
+                    //currently not update the informatino of a driver but given more time this would be implemneted in a 
+                    //similar fashion to the track update
+                    $scope.getTrackandDriverData();
+
+                    //function used to show the update database page and hide all pages and complete the animation
+                    function zoomBack()
+                    {
+                        var updateDB1Transition = document.getElementById("updateDatabaseBlock1");
+                        var updateDB2Transition = document.getElementById("updateDatabaseBlock2");
+                        var updateDB3Transition = document.getElementById("updateDatabaseBlock3");
+
+                        //hide all pages
+                        $scope.clearAll();
+
+                        //greensock api to show the database update page and complete the animation
+                        TweenLite.to([updateDB1Transition,updateDB2Transition,updateDB3Transition],0.0,{display:'inline-block'})
+                        TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:1,opacity:0.95},0.35);
+                    }
+                }
+
+                //may or may not be kept
+                $scope.chatClick = function()
+                {
+                    $http.get('/ChatController', {headers: {'Type': 'createChat'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                $scope.token = data;
+
+                                alert($scope.token);
+
+                                $scope.channel = new goog.appengine.Channel($scope.token);
+
+                                var socket = $scope.channel.open();
+                                //socket.onopen = $scope.onOpened();
+                                socket.onmessage = $scope.onMessage();
+                                //$scope.socket.onerror = $scope.onError();
+                                //$scope.socket.onclose = $scope.onClose();
+                            }
+                    });
+
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:0.1,opacity:0.1,onComplete: zoomBack},0.35);
+                    $scope.getTrackandDriverData();
+
+                    function zoomBack()
+                    {
+                        var chat1Transition = document.getElementById("chatBlock1");
+                        var chat2Transition = document.getElementById("chatBlock2");
+                        var chat3Transition = document.getElementById("chatBlock3");
+
+                        $scope.clearAll();
+                        TweenLite.to([chat1Transition,chat2Transition,chat3Transition],0.0,{display:'inline-block'})
+                        TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:1,opacity:0.95},0.35);
+                    }
+                }
+
+                $scope.onOpened = function()
+                {
+                    alert("Channel Opened");
+                }
+
+                $scope.onMessage = function(chatMsg)
+                {
+                    alert(chatMsg);
+                }
+
+                $scope.onError = function(error)
+                {
+                    alert(error);
+                }
+
+                $scope.onClose = function()
+                {
+                    alert("Channel Closed");
+                }
+
+                $scope.chatSendMsg = function(message)
+                {
+                    message = '{"Message": "' + message + '","Channel": ' + $scope.token + '}';
+
+                    alert(message);
+
+                    $http.post('/ChatController', message, {headers: {'Type': 'sendMsg'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+
+                            }
+                    });
+                }
+
+                //this function hides all pages and displays the tutorial page for the user data algorithm prediciton page
+                $scope.userOwnPredictionClick = function()
+                {
+                    var block1Transition = document.getElementById("homeBlock1");
+                    var block2Transition = document.getElementById("homeBlock2");
+                    var block3Transition = document.getElementById("homeBlock3");
+
+                    //greensock api to animate the home page block before calling the zoom back function on completion
+                    TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:0.1,opacity:0.1,onComplete: zoomBack},0.35);
+
+                    //function used to show the tutorial page for the user data algorithm prediciton page and hide all pages and complete the animation
+                    function zoomBack()
+                    {
+                        var updateDB1Transition = document.getElementById("userTutorialBlock1");
+                        var updateDB2Transition = document.getElementById("userTutorialBlock2");
+                        var updateDB3Transition = document.getElementById("userTutorialBlock3");
+
+                        //hide all pages
+                        $scope.clearAll();
+
+                        //greensock api to show the user own prediction tutorial page and complete the animation
+                        TweenLite.to([updateDB1Transition,updateDB2Transition,updateDB3Transition],0.0,{display:'inline-block'})
+                        TweenMax.staggerTo([block1Transition,block2Transition,block3Transition],1,{scale:1,opacity:0.95},0.35);
+                    }
+                }
+
+                //function used to pass new updated information on a track from the update database page with the new data returned
+                $scope.submitTrackDataUpdate = function()
+                {
+                    $http.post('/SearchTrack', $scope.TrackUpdate, {headers: {'Type': 'trackDataUpdate'}})
+                    .success(function(data) 
+                    {
+                            console.log(data);
+                            if (data == null)
+                            {
+                                // if not successful, bind errors to error variables
+                                alert("Something went wrong :( Please refresh the page and try again");
+                            } 
+                            else 
+                            {
+                                // if successful, bind success message to message
+                                //TODO, no need for this but test what happends when i remove it
+                                $scope.returnedTrackData = data;
+                            }
+                    });
+
+                    //this is called so that the new data can be returned
+                    $scope.getTrackandDriverData();
+                }
+
+                //function to get the data of the next race for use on the homepage and the members prediction league page
+                $scope.getNextRace = function()
+                {
+                    //need to get next race information
+                    //this is used for display on  the memebers race prediction page
+                    $http.post('/UserPrediction', $scope.returnedNextRace, {headers: {'Type': 'nextRace'}})
+                        .success(function(data) 
+                        {
+                                console.log(data);
+                                if (data == null)
+                                {
+                                    // if not successful, bind errors to error variables
+                                    alert("Something went wrong :( Please refresh the page and try again");
+                                } 
+                                else 
+                                {
+                                    // if successful, bind success message to message
+                                    //$scope.returnedTrackData = data;
+
+                                    $scope.returnedNextRace = data;
+                                    //oringinal data used to compare against when a user changes the position of a driver in their position
+                                    $scope.returnedNextRaceOriginal = angular.copy($scope.returnedNextRace);
+                                }
+                        });
+                }
+
+                //this function calls the server to get the league information of competing users, in the members league prediction page
+                $scope.getUserLeague = function()
+                {
+                    //need to get next race information
+                    $http.post('/UserPrediction', $scope.returnedNextRace, {headers: {'Type': 'getUserPredictionTable'}})
+                        .success(function(data) 
+                        {
+                                console.log(data);
+                                if (data == null)
+                                {
+                                    // if not successful, bind errors to error variables
+                                    alert("Something went wrong :( Please refresh the page and try again");
+                                } 
+                                else 
+                                {
+                                    // if successful, bind success message to message
+                                    $scope.returnedUserPredictionTable = data;
+                                }
+                        });
+
+                }
+
+                //function used to insert or update a users prediction for the next race,  when a user has altered the explanatory variables of the race testing set
+                $scope.insertUserPrediction = function()
+                {
+                    $http.post('/UserPrediction', $scope.returnedNextRace, {headers: {'Type': 'insertPrediction'}})
+                        .success(function(data) 
+                        {
+                                console.log(data);
+                                if (data == null)
+                                {
+                                    // if not successful, bind errors to error variables
+                                    alert("Something went wrong :( Please refresh the page and try again");
+                                } 
+                                else 
+                                {
+                                    alert("Your Prediction has been updated :) ");
+                                }
+                        });
+
+                        $scope.getUserLeague();
+                }
+
+                //resets all scope variables 
+                $scope.resetPageData = function()
+                {
+                    //reset sent data
+                    $scope.TrackUpdate = null;
+                    $scope.TrackSearch = null;
+                    $scope.formData = null;
+                    $scope.userData = null;
+
+                    //reset returned data
+                    $scope.returnedData = null;
+                    $scope.returnedTrackData = null;
+                    $scope.returnedDriverData = null;
+                    $scope.returnedGrandPrixData = null;
+                    $scope.returnedUserData = null;
+                    $scope.returnedNextRace = null;
+                    $scope.returnedUserPredictionTable = null;
+                }
+
+                //link to feedback form on google driver
+                $scope.feedbackClick = function()
+                {
+                    window.location.href = "https://docs.google.com/spreadsheet/viewform?usp=drive_web&formkey=dFdiQmRMOEJOM1F0Um51LWRmYTFja0E6MA#gid=0";
+                }
+			}
+		</script>
+	</body>
+</html>

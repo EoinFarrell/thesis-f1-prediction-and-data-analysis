@@ -1,0 +1,13 @@
+To create the envionment used for this project you need Eclipse installed on your computer.
+Eclispe.org
+
+After this you must install the Google App Engine Eclispe plugin
+This can be found at the below address with a tutorial on how to install
+https://developers.google.com/appengine/docs/java/tools/eclipse
+
+MySQL workbench can be got from
+http://www.mysql.com/products/workbench/
+Install this and create a local development server with the SQL code provided
+
+The next step is to import my project with all code into eclispe
+and you should be able to run it on the development server

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://java.sun.com/xml/ns/javaee"
+xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
+	<servlet>
+        <servlet-name>UserPrediction</servlet-name>
+        <servlet-class>servlets.UserPrediction</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UserPrediction</servlet-name>
+        <url-pattern>/UserPrediction</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>SearchDriver</servlet-name>
+        <servlet-class>servlets.SearchDriver</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SearchDriver</servlet-name>
+        <url-pattern>/SearchDriver</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>SearchTrack</servlet-name>>
+        <servlet-class>servlets.SearchTrack</servlet-class>    
+	</servlet>
+	<servlet-mapping>
+	    <servlet-name>SearchTrack</servlet-name>
+	    <url-pattern>/SearchTrack</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+	    <servlet-name>SearchGrandPrixEvents</servlet-name>
+	    <servlet-class>servlets.SearchGrandPrixEvents</servlet-class>
+	</servlet>
+	<servlet-mapping>
+	    <servlet-name>SearchGrandPrixEvents</servlet-name>
+	    <url-pattern>/SearchGrandPrixEvents</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+	    <servlet-name>UserSignIn</servlet-name>
+	    <servlet-class>servlets.UserSignIn</servlet-class>
+	</servlet>
+	<servlet-mapping>
+	    <servlet-name>UserSignIn</servlet-name>
+	    <url-pattern>/UserSignIn</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+	    <servlet-name>ChatController</servlet-name>
+	    <servlet-class>servlets.ChatController</servlet-class>
+	</servlet>
+	<servlet-mapping>
+	    <servlet-name>ChatController</servlet-name>
+	    <url-pattern>/ChatController</url-pattern>
+	</servlet-mapping>
+    
+	<welcome-file-list>
+		<welcome-file>HomePage.html</welcome-file>
+	</welcome-file-list>
+</web-app>

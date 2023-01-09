@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	
+		<meta charset="ISO-8859-1">
+		
+		<title>F1Prediction</title>
+		
+		<!-- LOAD JQUERY -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<!-- LOAD ANGULAR -->
+		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+		
+		<script>
+			// define angular module/app
+			var formApp = angular.module('formApp', []);
+	
+			// create angular controller and pass in $scope and $http
+			function formController($scope, $http) {
+				
+				// create a blank object to hold our form information
+				// $scope will allow this to pass between controller and view
+				$scope.formData = {};
+				$scope.returnedData = {};
+				
+				// process the form
+				$scope.processForm = function() 
+				{
+					$scope.test = "Calculating Results"
+					$http.post('/UserPrediction', $scope.formData)
+					.success(function(data) 
+							{
+				            console.log(data);
+				            if (data == null) 
+				            {
+				            	// if not successful, bind errors to error variables
+				                alert("Something went wrong :(");
+				            } 
+				            else 
+				            {
+				            	// if successful, bind success message to message
+				                $scope.returnedData = data;
+								$scope.test = "This works now";
+				            }
+				        });
+
+				};
+			}
+		</script>
+		
+	</head>
+	<body ng-app="formApp" ng-controller="formController">
+	
+		<br><br>
+		<a href="UserPrediction.jsp">User Prediction</a>
+		<br>
+		<a href="F1Prediction.html">F1 Prediction (Not yet implemented)</a>
+		<br>
+		<a href="NewFile.html">F1 Prediction (Not yet implemented)</a>
+		
+		<form ng-submit="processForm()">
+		
+	      	<select name="TrainingVarCount" required = "true">
+		      	<option value=1>1</option>
+		      	<option value=2>2</option>
+	      	</select>
+	      	
+	      	<br><br>
+	      	
+	      	<textarea name="TestingVar1Str" rows="10" cols="15" placeholder="Training: 1st Explanatory Variables" required="true" ng-model="formData.TrainingVar1Str"></textarea>
+	      	<textarea name="TrainingVar2Str" rows="10" cols="15" placeholder="Training: 2nd Explanatory Variables" ng-model="formData.TrainingVar2Str"></textarea>
+	      	<textarea name="TrainingReStr" rows="10" cols="15" placeholder ="Training: Response Variables" required="true" ng-model="formData.TrainingReStr"></textarea>
+	     	<br>
+	      	<textarea name="TestingVar1Str" rows="10" cols="15" placeholder = "Testing: 1st Explanatory Variables" required="true" ng-model="formData.TestingVar1Str"></textarea>
+	      	<textarea name="TestingVar2Str" rows="10" cols="15" placeholder = "Testing: 2st Explanatory Variables" ng-model="formData.TestingVar2Str"></textarea>
+	      	<div><input type="submit" value="Run Prediction"/></div>
+	      	<input type="hidden" name="guestbookName" value="asdf"/>
+	      	
+    	</form>
+		
+		<div id="result"></div>
+		
+		<p>
+		{{ formData.name }}
+		<br>
+		{{ returnedData }}
+		</p>
+		
+		<!-- SHOW ERROR/SUCCESS MESSAGES -->
+		<div id="messages" class="well" ng-model="test">{{test}}</div>
+		
+	</body>
+</html>

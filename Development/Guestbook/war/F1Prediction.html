@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="ISO-8859-1">
+		<title>Insert title here</title>
+		
+		<!-- LOAD JQUERY -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<!-- LOAD ANGULAR -->
+		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+		
+		<script>
+			// define angular module/app
+			var formApp = angular.module('formApp', []);
+	
+			// create angular controller and pass in $scope and $http
+			function formController($scope, $http) {
+				
+				// create a blank object to hold our form information
+				// $scope will allow this to pass between controller and view
+				$scope.formData = {};
+				$scope.returnedData = {};
+				
+				// process the form
+				$scope.processForm = function() 
+				{
+					$scope.test = "Calculating Results"
+					$http.post('/F1Prediction', $scope.formData)
+					.success(function(data) 
+					{
+				            console.log(data);
+				            if (data == null) 
+				            {
+				            	// if not successful, bind errors to error variables
+				                alert("Something went wrong :(");
+				            } 
+				            else 
+				            {
+				            	// if successful, bind success message to message
+				                $scope.returnedData = data;
+								$scope.test = "This works now";
+								$scope.people = data;
+				            }
+					});
+
+				};
+			}
+		</script>
+	</head>
+	<body ng-app="formApp" ng-controller="formController">
+	
+		<form ng-submit="processForm()">
+			
+			How many years of data to use for prediction?
+			<select name="YearsData" required = "true" ng-model="formData.YearsData">
+		      	<option value=1>1</option>
+		      	<option value=2>2</option>
+		      	<option value=3>3</option>
+		      	<option value=4>4</option>
+	      	</select>
+	      	<br/>
+			<input type="checkbox" name="PreviousRace3" value="PreviousRace3" ng-model="formData.PreviousRace3">Previous Race 3<br/>
+			<input type="checkbox" name="PreviousRace2" value="PreviousRace2" ng-model="formData.PreviousRace2">Previous Race 2<br/>
+			<input type="checkbox" name="PreviousRace1" value="PreviousRace1" ng-model="formData.PreviousRace1">Previous Race 1<br/>
+			<input type="checkbox" name="FP3Rank" value="FP3Rank" ng-model="formData.FP3Rank">Free Practice 3 Rank<br/>
+			<input type="checkbox" name="StartPos" value="StartPos" ng-model="formData.StartPos">Start Position<br/>
+	      	</br></br>
+	      	<div><input type="submit" value="Run Prediction"/></div>
+		</form>
+		
+		<div id="result"></div>
+		
+		<p>
+		{{ formData.name }}
+		<br>
+		{{ returnedData }}
+		</p>
+		
+		<!-- SHOW ERROR/SUCCESS MESSAGES -->
+		<div id="messages" class="well" ng-model="test">{{test}}</div>
+		
+		<table>
+		    <tr>
+		        <th>asdf</th>
+		        <th>b</th>
+		        <th>Output</th>
+		    </tr>
+		    <tr ng-repeat="p in people">
+		        <td>{{p.holding}}</td>
+		        <td>{{p.b}}</td>
+		        <td>{{p}}</td>
+		    </tr>
+		</table>
+		
+	</body>
+</html>
